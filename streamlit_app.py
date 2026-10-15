@@ -242,7 +242,7 @@ tab_eda, tab_clustering, tab_prediction = st.tabs([
 
 with tab_eda:
 
-    st.markdown(
+    st.html(
         f"""
         <div style="
             padding: 8px 2px 16px 2px;
@@ -269,8 +269,7 @@ with tab_eda:
                 margin-top: 5px;
             ">Understand the relationship between distance, traffic, order timing, weather and delivery performance.</div>
         </div>
-        """,
-        unsafe_allow_html=True,
+        """
     )
 
     # -------------------------------------------------------------------------
