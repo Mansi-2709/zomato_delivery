@@ -297,7 +297,7 @@ with tab_eda:
         with st.container(border=True):
 
             fig_distance = px.scatter(
-                distance_df,
+                delivery_data,
                 x="distance_km",
                 y="Time_taken (min)",
                 color_discrete_map=traffic_colors,
