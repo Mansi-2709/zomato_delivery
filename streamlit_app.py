@@ -273,7 +273,7 @@ with tab_eda:
             </div>
         </div>
         """,
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
 
     # -------------------------------------------------------------------------
@@ -696,7 +696,7 @@ with tab_eda:
             delivery time do not, by themselves, establish causation.
         </div>
         """,
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
 
 
