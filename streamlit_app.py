@@ -115,28 +115,628 @@ st.markdown(
         """,
         unsafe_allow_html=True,
     )
-st.stop()
 
+# =============================================================================
+# LOAD DATA
+# =============================================================================
 delivery_data = pd.read_csv('https://raw.githubusercontent.com/Mansi-2709/zomato_delivery/refs/heads/master/Zomato2.csv')
-fig = px.scatter(delivery_data, x="distance_km", y="Time_taken (min)", color="Road_traffic_density")
-fig.show()
 
-orderhour_df = delivery_data.groupby('Time_Orderd_Hour')['Time_taken (min)'].mean().reset_index()
-fig = px.line(orderhour_df, x='Time_Orderd_Hour', y='Time_taken (min)', markers=True)
-fig.show()
+# =============================================================================
+# PREPARE DAY-OF-WEEK LABELS
+# =============================================================================
 
-vehicle_df = delivery_data.groupby('Type_of_vehicle')['Time_taken (min)'].mean().reset_index()
-fig = px.line(vehicle_df, x='Type_of_vehicle', y='Time_taken (min)', markers=True)
-fig.show()
+day_map = {
+    0: "Monday",
+    1: "Tuesday",
+    2: "Wednesday",
+    3: "Thursday",
+    4: "Friday",
+    5: "Saturday",
+    6: "Sunday"
+}
 
-weather_df = delivery_data.groupby('Weather_conditions')['Time_taken (min)'].mean().reset_index()
-fig = px.line(weather_df, x='Weather_conditions', y='Time_taken (min)', markers=True)
-fig.show()
+day_order = list(day_map.values())
 
-fig = px.histogram(delivery_data, x="Day_of_Week_Num")
-fig.update_layout(bargap=0.2)
-fig.show()
-# -------------------------------- Footer -------------------------------------
+delivery_data["Day_of_Week_Num"] = pd.to_numeric(
+    delivery_data["Day_of_Week_Num"],
+    errors="coerce"
+).astype("Int64")
+
+delivery_data["Day_of_Week"] = (
+    delivery_data["Day_of_Week_Num"].map(day_map)
+)
+
+# Normalize traffic labels for consistent plot colors
+
+traffic_colors = {
+    "High": RED_DARK,
+    "Medium": RED,
+    "Low": "#FF9AA5",
+    "Jam": "#7B1722"
+}
+
+# =============================================================================
+# PLOTLY RED-AND-WHITE THEME
+# =============================================================================
+
+def style_chart(fig, title, height=370):
+
+    fig.update_layout(
+        template="plotly_white",
+        title={
+            "text": title,
+            "x": 0.025,
+            "xanchor": "left",
+            "font": {
+                "family": "Manrope, Arial, sans-serif",
+                "size": 17,
+                "color": INK
+            }
+        },
+        font={
+            "family": "DM Sans, Arial, sans-serif",
+            "size": 12,
+            "color": INK
+        },
+        paper_bgcolor=WHITE,
+        plot_bgcolor=WHITE,
+        height=height,
+        margin=dict(l=16, r=16, t=66, b=22),
+        hoverlabel=dict(
+            bgcolor=WHITE,
+            font_size=12,
+            font_family="DM Sans, Arial, sans-serif",
+            font_color=INK,
+            bordercolor=BORDER
+        ),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.01,
+            xanchor="right",
+            x=1,
+            bgcolor="rgba(255,255,255,0)"
+        )
+    )
+
+    fig.update_xaxes(
+        showgrid=False,
+        showline=True,
+        linecolor=BORDER,
+        linewidth=1,
+        ticks="outside",
+        tickcolor=BORDER,
+        tickfont=dict(size=11, color=MUTED),
+        title_font=dict(size=12, color=INK),
+        automargin=True
+    )
+
+    fig.update_yaxes(
+        showgrid=True,
+        gridcolor="#F6E8EA",
+        gridwidth=1,
+        zeroline=False,
+        showline=False,
+        tickfont=dict(size=11, color=MUTED),
+        title_font=dict(size=12, color=INK),
+        automargin=True
+    )
+
+    return fig
+
+
+# =============================================================================
+# MAIN TABS — ALL VISIBLE ON THE FIRST PAGE
+# =============================================================================
+
+tab_eda, tab_clustering, tab_prediction = st.tabs([
+    "📊  EDA & INSIGHTS",
+    "📍  CLUSTERING INTELLIGENCE",
+    "⏱️  DELIVERY PREDICTION"
+])
+
+
+# =============================================================================
+# TAB 1 — EDA & GRAPHS
+# =============================================================================
+
+with tab_eda:
+
+    st.markdown(
+        f"""
+        <div style="
+            padding: 8px 2px 16px 2px;
+        ">
+            <div style="
+                color: {RED};
+                font-size: 11px;
+                font-weight: 800;
+                letter-spacing: 2px;
+                text-transform: uppercase;
+                margin-bottom: 5px;
+            ">EXPLORE YOUR DATA</div>
+
+            <div style="
+                color: {INK};
+                font-size: 25px;
+                font-weight: 800;
+                letter-spacing: -0.7px;
+            ">Delivery Performance Overview</div>
+
+            <div style="
+                color: {MUTED};
+                font-size: 14px;
+                margin-top: 5px;
+            ">
+                Understand the relationship between distance, traffic,
+                order timing, weather and delivery performance.
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # -------------------------------------------------------------------------
+    # GRAPH 1 — Distance vs Delivery Time
+    # -------------------------------------------------------------------------
+
+    st.markdown(
+        f"""
+        <div style="color:{RED_DARK}; font-size:12px;
+                    font-weight:800; letter-spacing:1px;
+                    margin:8px 0 10px 0;">
+            DELIVERY DISTANCE & TIMING
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    col1, col2 = st.columns(2, gap="large")
+
+    with col1:
+        with st.container(border=True):
+
+            fig_distance = px.scatter(
+                distance_df,
+                x="distance_km",
+                y="Time_taken (min)",
+                color_discrete_map=traffic_colors,
+                labels={
+                    "distance_km": "Delivery distance (km)",
+                    "Time_taken (min)": "Delivery time (min)"
+                },
+                title="Distance vs Delivery Time",
+                opacity=0.72
+            )
+
+            fig_distance.update_traces(
+                marker=dict(
+                    size=7,
+                    line=dict(width=0.5, color=WHITE)
+                )
+            )
+
+            fig_distance = style_chart(
+                fig_distance,
+                "Distance vs Delivery Time",
+                height=390
+            )
+
+            st.plotly_chart(
+                fig_distance,
+                use_container_width=True,
+                config={"displayModeBar": False}
+            )
+
+            st.caption(
+                "Insight: Examine whether longer delivery distances "
+                "are associated with longer delivery times, and compare "
+                "the patterns across traffic conditions."
+            )
+
+    # -------------------------------------------------------------------------
+    # GRAPH 2 — Average Delivery Time by Order Hour
+    # -------------------------------------------------------------------------
+
+    with col2:
+        with st.container(border=True):
+
+            orderhour_df = (
+                delivery_data
+                .groupby("Time_Orderd_Hour", as_index=False)
+                ["Time_taken (min)"]
+                .mean()
+                .sort_values("Time_Orderd_Hour")
+            )
+
+            fig_hour = px.line(
+                orderhour_df,
+                x="Time_Orderd_Hour",
+                y="Time_taken (min)",
+                markers=True,
+                labels={
+                    "Time_Orderd_Hour": "Order hour",
+                    "Time_taken (min)": "Average delivery time (min)"
+                },
+                title="Delivery Time by Order Hour"
+            )
+
+            fig_hour.update_traces(
+                line=dict(color=RED, width=3),
+                marker=dict(
+                    color=RED_DARK,
+                    size=8,
+                    line=dict(color=WHITE, width=2)
+                ),
+                hovertemplate=(
+                    "Hour: %{x}<br>"
+                    "Avg delivery time: %{y:.1f} min"
+                    "<extra></extra>"
+                )
+            )
+
+            fig_hour = style_chart(
+                fig_hour,
+                "Delivery Time by Order Hour",
+                height=390
+            )
+
+            st.plotly_chart(
+                fig_hour,
+                use_container_width=True,
+                config={"displayModeBar": False}
+            )
+
+            st.caption(
+                "Insight: Identify periods when average delivery time "
+                "rises or falls throughout the day."
+            )
+
+    # -------------------------------------------------------------------------
+    # GRAPH 3 — Average Delivery Time by Vehicle Type
+    # -------------------------------------------------------------------------
+
+    st.markdown(
+        f"""
+        <div style="color:{RED_DARK}; font-size:12px;
+                    font-weight:800; letter-spacing:1px;
+                    margin:20px 0 10px 0;">
+            OPERATING CONDITIONS
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    col3, col4 = st.columns(2, gap="large")
+
+    with col3:
+        with st.container(border=True):
+
+            vehicle_df = (
+                delivery_data
+                .groupby("Type_of_vehicle", as_index=False)
+                ["Time_taken (min)"]
+                .mean()
+            )
+
+            fig_vehicle = px.line(
+                vehicle_df,
+                x="Type_of_vehicle",
+                y="Time_taken (min)",
+                markers= True,
+                labels={
+                    "Type_of_vehicle": "Vehicle type",
+                    "Time_taken (min)": "Average delivery time (min)"
+                },
+                title="Average Delivery Time by Vehicle"
+            )
+
+            fig_vehicle.update_traces(
+                line=dict(color=RED, width=3),
+                marker=dict(
+                    color=RED_DARK,
+                    size=8,
+                    line=dict(color=WHITE, width=2)
+                ),
+                hovertemplate=(
+                    "Hour: %{x}<br>"
+                    "Avg delivery time: %{y:.1f} min"
+                    "<extra></extra>"
+                )
+            )
+
+            fig_vehicle = style_chart(
+                fig_vehicle,
+                "Average Delivery Time by Vehicle",
+                height=365
+            )
+
+            fig_vehicle.update_layout(showlegend=False)
+
+            st.plotly_chart(
+                fig_vehicle,
+                use_container_width=True,
+                config={"displayModeBar": False}
+            )
+
+            st.caption(
+                "Compare average delivery time across vehicle categories."
+            )
+
+    # -------------------------------------------------------------------------
+    # GRAPH 4 — Average Delivery Time by Weather
+    # -------------------------------------------------------------------------
+
+    with col4:
+        with st.container(border=True):
+
+            weather_df = (
+                delivery_data
+                .groupby("Weather_conditions", as_index=False)
+                ["Time_taken (min)"]
+                .mean()
+            )
+
+            fig_weather = px.line(
+                weather_df,
+                x="Weather_conditions",
+                y="Time_taken (min)",
+                markers=True,
+                labels={
+                    "Weather_conditions": "Weather",
+                    "Time_taken (min)": "Average delivery time (min)"
+                },
+                title="Average Delivery Time by Weather"
+            )
+
+            fig_weather.update_traces(
+                line=dict(color=RED, width=3),
+                marker=dict(
+                    color=RED_DARK,
+                    size=8,
+                    line=dict(color=WHITE, width=2)
+                ),
+                hovertemplate=(
+                    "Hour: %{x}<br>"
+                    "Avg delivery time: %{y:.1f} min"
+                    "<extra></extra>"
+                )
+            )
+
+            fig_weather = style_chart(
+                fig_weather,
+                "Average Delivery Time by Weather",
+                height=365
+            )
+
+            fig_weather.update_layout(showlegend=False)
+
+            st.plotly_chart(
+                fig_weather,
+                use_container_width=True,
+                config={"displayModeBar": False}
+            )
+
+            st.caption(
+                "Compare average delivery time under different weather "
+                "conditions."
+            )
+
+    # -------------------------------------------------------------------------
+    # GRAPH 5 — Orders by Day of Week
+    # -------------------------------------------------------------------------
+
+    st.markdown(
+        f"""
+        <div style="color:{RED_DARK}; font-size:12px;
+                    font-weight:800; letter-spacing:1px;
+                    margin:20px 0 10px 0;">
+            WEEKLY ORDER PATTERNS
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    day_col, day_insight_col = st.columns([1.5, 1], gap="large")
+
+    with day_col:
+        with st.container(border=True):
+
+            day_df = delivery_data.dropna(
+                subset=["Day_of_Week"]
+            )
+
+            fig_day = px.histogram(
+                day_df,
+                x="Day_of_Week",
+                category_orders={
+                    "Day_of_Week": day_order
+                },
+                color_discrete_sequence=[RED],
+                labels={
+                    "Day_of_Week": "Day of week",
+                    "count": "Number of orders"
+                },
+                title="Order Distribution by Day"
+            )
+
+            fig_day.update_traces(
+                marker_line_color=WHITE,
+                marker_line_width=1.5,
+                hovertemplate=(
+                    "%{x}<br>"
+                    "Records: %{y}"
+                    "<extra></extra>"
+                )
+            )
+
+            fig_day = style_chart(
+                fig_day,
+                "Order Distribution by Day",
+                height=350
+            )
+
+            # Increase the gap between bars to make them slimmer
+            fig_day.update_layout(
+                bargap=0.55,
+                showlegend=False,
+                xaxis=dict(
+                    categoryorder="array",
+                    categoryarray=day_order
+                )
+            )
+
+            st.plotly_chart(
+                fig_day,
+                use_container_width=True,
+                config={"displayModeBar": False}
+            )
+
+    with day_insight_col:
+        with st.container(border=True):
+
+            day_counts = (
+                delivery_data["Day_of_Week"]
+                .value_counts()
+                .reindex(day_order, fill_value=0)
+            )
+
+            total_day_records = int(day_counts.sum())
+
+            busiest_day = (
+                day_counts.idxmax()
+                if total_day_records > 0
+                else "N/A"
+            )
+
+            busiest_count = (
+                int(day_counts.max())
+                if total_day_records > 0
+                else 0
+            )
+
+            busiest_pct = (
+                busiest_count / total_day_records * 100
+                if total_day_records > 0
+                else 0
+            )
+
+            st.markdown(
+                f"""
+                <div style="padding:8px 4px 14px 4px;">
+                    <div style="
+                        color:{MUTED};
+                        font-size:11px;
+                        font-weight:800;
+                        letter-spacing:1.4px;
+                        text-transform:uppercase;
+                    ">WEEKLY SNAPSHOT</div>
+
+                    <div style="
+                        color:{INK};
+                        font-size:24px;
+                        font-weight:800;
+                        margin-top:10px;
+                    ">{busiest_day}</div>
+
+                    <div style="
+                        color:{RED};
+                        font-size:13px;
+                        font-weight:700;
+                        margin-top:3px;
+                    ">Highest order count</div>
+
+                    <div style="
+                        background:{RED_LIGHT};
+                        border-radius:13px;
+                        padding:15px;
+                        margin-top:18px;
+                    ">
+                        <div style="color:{MUTED};font-size:12px;">
+                            Records on busiest day
+                        </div>
+                        <div style="
+                            color:{RED_DARK};
+                            font-size:26px;
+                            font-weight:800;
+                            margin-top:3px;
+                        ">{busiest_count:,}</div>
+
+                        <div style="color:{MUTED};font-size:12px;">
+                            {busiest_pct:.1f}% of weekday-labelled records
+                        </div>
+                    </div>
+
+                    <div style="
+                        color:{MUTED};
+                        font-size:13px;
+                        line-height:1.7;
+                        margin-top:15px;
+                    ">
+                        Use this comparison to investigate which days
+                        record the highest order volume. The busiest day
+                        is based on record counts, not delivery speed.
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+    st.markdown(
+        f"""
+        <div style="
+            border-top:1px solid {BORDER};
+            margin-top:24px;
+            padding-top:12px;
+            color:{MUTED};
+            font-size:12px;
+        ">
+            <b style="color:{RED}">Analysis note:</b>
+            These charts show descriptive patterns. Differences in average
+            delivery time do not, by themselves, establish causation.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+# =============================================================================
+# TAB 2 — CLUSTERING
+# Keep/move your existing clustering map and cluster profile code here.
+# =============================================================================
+
+with tab_clustering:
+
+    st.subheader("Clustering Intelligence")
+    st.caption(
+        "Move your existing geographic clustering maps, cluster metrics, "
+        "and cluster profile tables into this tab."
+    )
+
+    # Paste your existing clustering map and cluster profile code here.
+
+
+# =============================================================================
+# TAB 3 — PREDICTION
+# Keep/move your existing prediction UI code here.
+# No model training or inference is included in this UI structure.
+# =============================================================================
+
+with tab_prediction:
+
+    st.subheader("Delivery Time Prediction")
+    st.caption(
+        "Move your existing delivery prediction inputs and prediction-result "
+        "layout into this tab."
+    )
+
+    # Paste your existing prediction form and result UI here.
+
+
+# =============================================================================
+# FOOTER
+# =============================================================================
+
 st.markdown(
     f"""
     <div class="footer">
