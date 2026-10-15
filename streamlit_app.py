@@ -115,12 +115,7 @@ st.markdown(
         """,
         unsafe_allow_html=True,
     )
-    st.error("The Zomato dataset was not found. No upload control is provided in this app.")
-    st.markdown(
-        "Place your cleaned CSV in the same folder as `app.py` and name it **`zomato_cleaned.csv`**. "
-        "The app will load it automatically the next time it runs."
-    )
-    st.stop()
+st.stop()
 
 
 
@@ -149,4 +144,3 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
-
