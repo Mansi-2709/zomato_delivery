@@ -617,7 +617,7 @@ with tab_eda:
                 else 0
             )
 
-            st.markdown(
+            st.html(
                 f"""
                 <div style="padding:8px 4px 14px 4px;">
                     <div style="
@@ -670,8 +670,7 @@ with tab_eda:
                         margin-top:15px;
                     ">Use this comparison to investigate which days record the highest order volume. The busiest day is based on record counts, not delivery speed.</div>
                 </div>
-                """,
-                unsafe_allow_html=True
+                """
             )
 
     st.markdown(
