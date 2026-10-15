@@ -267,10 +267,7 @@ with tab_eda:
                 color: {MUTED};
                 font-size: 14px;
                 margin-top: 5px;
-            ">
-                Understand the relationship between distance, traffic,
-                order timing, weather and delivery performance.
-            </div>
+            ">Understand the relationship between distance, traffic, order timing, weather and delivery performance.</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -672,11 +669,7 @@ with tab_eda:
                         font-size:13px;
                         line-height:1.7;
                         margin-top:15px;
-                    ">
-                        Use this comparison to investigate which days
-                        record the highest order volume. The busiest day
-                        is based on record counts, not delivery speed.
-                    </div>
+                    ">Use this comparison to investigate which days record the highest order volume. The busiest day is based on record counts, not delivery speed.</div>
                 </div>
                 """,
                 unsafe_allow_html=True
