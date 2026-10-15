@@ -117,8 +117,25 @@ st.markdown(
     )
 st.stop()
 
+delivery_data = pd.read_csv('https://raw.githubusercontent.com/Mansi-2709/zomato_delivery/refs/heads/master/Zomato2.csv')
+fig = px.scatter(delivery_data, x="distance_km", y="Time_taken (min)", color="Road_traffic_density")
+fig.show()
 
-    
+orderhour_df = delivery_data.groupby('Time_Orderd_Hour')['Time_taken (min)'].mean().reset_index()
+fig = px.line(orderhour_df, x='Time_Orderd_Hour', y='Time_taken (min)', markers=True)
+fig.show()
+
+vehicle_df = delivery_data.groupby('Type_of_vehicle')['Time_taken (min)'].mean().reset_index()
+fig = px.line(vehicle_df, x='Type_of_vehicle', y='Time_taken (min)', markers=True)
+fig.show()
+
+weather_df = delivery_data.groupby('Weather_conditions')['Time_taken (min)'].mean().reset_index()
+fig = px.line(weather_df, x='Weather_conditions', y='Time_taken (min)', markers=True)
+fig.show()
+
+fig = px.histogram(delivery_data, x="Day_of_Week_Num")
+fig.update_layout(bargap=0.2)
+fig.show()
 # -------------------------------- Footer -------------------------------------
 st.markdown(
     f"""
