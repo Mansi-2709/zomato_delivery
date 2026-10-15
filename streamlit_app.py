@@ -118,22 +118,7 @@ st.markdown(
 st.stop()
 
 
-
-# The three tabs are in the main page and visible immediately below the header.
-tab_eda, tab_cluster, tab_predict = st.tabs(
-    ["📊  EDA & INSIGHTS", "📍  CLUSTERING", "⏱️  PREDICTIONS"]
-)
-
-# ================================= TAB 1 =====================================
-with tab_eda:
     
-
-# ================================= TAB 2 =====================================
-with tab_cluster:
-    
-# ================================= TAB 3 =====================================
-with tab_predict:
-  
 # -------------------------------- Footer -------------------------------------
 st.markdown(
     f"""
