@@ -98,7 +98,8 @@ st.markdown(
     unsafe_allow_html=True,
 )
 # ----------------------------------------------------------------------------------------
-    st.markdown(
+
+st.markdown(
         f"""
         <div class="topline"></div>
         <div class="hero">
