@@ -296,6 +296,7 @@ with tab_eda:
                 delivery_data,
                 x="distance_km",
                 y="Time_taken (min)",
+                color="Road_traffic_density",
                 color_discrete_map=traffic_colors,
                 labels={
                     "distance_km": "Delivery distance (km)",
