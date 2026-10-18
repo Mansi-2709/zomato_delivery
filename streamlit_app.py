@@ -298,7 +298,7 @@ OPERATIONAL_CLUSTER_PROFILES = {
     7: {
         "Traffic density": "Mostly low",
         "Vehicle condition": "Mostly medium condition",
-qq	        "Vehicle type": "Mostly motorcycles"
+        "Vehicle type": "Mostly motorcycles"
     }
 }
 
