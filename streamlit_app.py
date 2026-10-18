@@ -1058,10 +1058,10 @@ with tab_clustering:
         st.markdown("### Operational Cluster Profiles")
 
         st.caption(
-            "The descriptions below summarize the characteristics you "
-            "identified while profiling your operational clusters. "
+            "The descriptions below summarize the Traffic Density, Vehicle condition"
+            "and type of vehicle for each operational clusters. "
             "Record counts and city percentages are calculated for the "
-            "selected city."
+            "selected city in each cluster."
         )
 
         operational_ids = (
