@@ -224,6 +224,184 @@ def style_chart(fig, title, height=370):
 
     return fig
 
+# =============================================================================
+# CITY MAPPING: CITY NAME -> hdb_delivery CLUSTER ID(S)
+# =============================================================================
+
+CITY_HDB_CLUSTERS = {
+    "Punjab": [13],
+    "Uttarakhand": [8],
+    "Agra": [15],
+    "Jaipur": [16],
+    "Lucknow": [9],
+    "Prayagraj": [4],
+    "Jharkhand": [14],
+    "Kolkata": [3],
+    "Bhopal": [10],
+    "Indore": [11],
+    "Vadodara": [19],
+    "Surat": [18],
+    "Sambhajinagar": [12],
+    "Mumbai": [17],
+    "Pune": [23, 24, 22],
+    "Hyderabad": [0],
+    "Goa / Panji": [2],
+    "Chennai": [1],
+    "Bengaluru": [5],
+    "Mysuru": [20, 21],
+    "Coimbatore": [6],
+    "Kochi": [7]
+}
+
+
+# =============================================================================
+# OPERATIONAL CLUSTER DESCRIPTIONS
+# Based on your cluster profiling
+# =============================================================================
+
+OPERATIONAL_CLUSTER_PROFILES = {
+    0: {
+        "Traffic density": "Mostly jam",
+        "Vehicle condition": "Mostly medium condition",
+        "Vehicle type": "Mostly scooters"
+    },
+    1: {
+        "Traffic density": "Mostly high",
+        "Vehicle condition": "No vehicles in best condition",
+        "Vehicle type": "Mostly motorcycles"
+    },
+    2: {
+        "Traffic density": "Mostly jam",
+        "Vehicle condition": "Very few vehicles in best condition",
+        "Vehicle type": "Very few electric scooters"
+    },
+    3: {
+        "Traffic density": "Mostly jam or low",
+        "Vehicle condition": "Many in best condition; none in worst condition",
+        "Vehicle type": "Highest number of electric scooters"
+    },
+    4: {
+        "Traffic density": "Mostly medium",
+        "Vehicle condition": "Very few vehicles in best condition",
+        "Vehicle type": "Mostly motorcycles"
+    },
+    5: {
+        "Traffic density": "Mostly medium",
+        "Vehicle condition": "Most vehicles in worst condition",
+        "Vehicle type": "Mostly motorcycles"
+    },
+    6: {
+        "Traffic density": "Mostly jam or low",
+        "Vehicle condition": "Highest number of vehicles in worst condition",
+        "Vehicle type": "Highest number of motorcycles; no scooters"
+    },
+    7: {
+        "Traffic density": "Mostly low",
+        "Vehicle condition": "Mostly medium condition",
+qq	        "Vehicle type": "Mostly motorcycles"
+    }
+}
+
+
+# =============================================================================
+# HELPER FUNCTION: CREATE A MAP WITH AUTOMATIC CENTER AND ZOOM
+# =============================================================================
+
+def create_city_map(data, lat_col, lon_col, title):
+
+    map_data = data[
+        [
+            lat_col,
+            lon_col,
+            "_operational_cluster_label",
+            "distance_km",
+            "Time_taken (min)"
+        ]
+    ].copy()
+
+    # Find the geographic center from the midpoint of the coordinate bounds
+    min_lat = map_data[lat_col].min()
+    max_lat = map_data[lat_col].max()
+    min_lon = map_data[lon_col].min()
+    max_lon = map_data[lon_col].max()
+
+    center_lat = (min_lat + max_lat) / 2
+    center_lon = (min_lon + max_lon) / 2
+
+    # Approximate geographic span, accounting for longitude at this latitude
+    lat_span = max_lat - min_lat
+    lon_span = (
+        (max_lon - min_lon)
+        * np.cos(np.radians(center_lat))
+    )
+
+    span = max(lat_span, lon_span, 0.02)
+
+    # Dynamically select zoom based on the geographic spread.
+    # Smaller spans get closer zoom; larger spans get wider zoom.
+    zoom = float(
+        np.clip(
+            np.log2(300 / span),
+            5.5,
+            12
+        )
+    )
+
+    # Plotly uses discrete colors when cluster labels are strings
+    fig = px.scatter_mapbox(
+        map_data,
+        lat=lat_col,
+        lon=lon_col,
+        color="_operational_cluster_label",
+        color_discrete_sequence=PALETTE,
+        hover_data={
+            "distance_km": ":.2f",
+            "Time_taken (min)": ":.1f",
+            "_operational_cluster_label": True
+        },
+        labels={
+            "_operational_cluster_label": "Operational cluster",
+            lat_col: "Latitude",
+            lon_col: "Longitude",
+            "distance_km": "Distance (km)",
+            "Time_taken (min)": "Delivery time (min)"
+        },
+        height=520
+    )
+
+    fig.update_layout(
+        mapbox_style="open-street-map",
+        mapbox_center={
+            "lat": center_lat,
+            "lon": center_lon
+        },
+        mapbox_zoom=zoom,
+        title={
+            "text": title,
+            "x": 0.03,
+            "xanchor": "left",
+            "font": {
+                "size": 17,
+                "color": INK,
+                "family": "Manrope, Arial, sans-serif"
+            }
+        },
+        paper_bgcolor=WHITE,
+        plot_bgcolor=WHITE,
+        margin=dict(l=0, r=0, t=55, b=0),
+        legend_title_text="Operational cluster",
+        legend=dict(
+            bgcolor="rgba(255,255,255,0.9)",
+            bordercolor=BORDER,
+            borderwidth=1
+        )
+    )
+
+    fig.update_traces(
+        marker=dict(size=7, opacity=0.78)
+    )
+
+    return fig
 
 # =============================================================================
 # MAIN TABS — ALL VISIBLE ON THE FIRST PAGE
@@ -699,14 +877,264 @@ with tab_eda:
 
 with tab_clustering:
 
-    st.subheader("Clustering Intelligence")
+    st.subheader("Geographic & Operational Intelligence")
+
     st.caption(
-        "Move your existing geographic clustering maps, cluster metrics, "
-        "and cluster profile tables into this tab."
+        "Explore delivery locations, restaurant hotspots, and operational "
+        "segments across the cities represented in your dataset."
     )
 
-    # Paste your existing clustering map and cluster profile code here.
+    # -------------------------------------------------------------------------
+    # CITY DROPDOWN
+    # -------------------------------------------------------------------------
 
+    selected_city = st.selectbox(
+        "Select a city / region",
+        options=list(CITY_HDB_CLUSTERS.keys()),
+        index=list(CITY_HDB_CLUSTERS.keys()).index("Jaipur"),
+        key="clustering_city_selector"
+    )
+
+    # -------------------------------------------------------------------------
+    # FILTER DATA USING hdb_delivery
+    # -------------------------------------------------------------------------
+
+    selected_hdb_ids = CITY_HDB_CLUSTERS[selected_city]
+
+    hdb_labels = pd.to_numeric(
+        delivery_data["hdb_delivery"],
+        errors="coerce"
+    )
+
+    # All records matching the selected city's geographic cluster ID(s)
+    my_data = delivery_data.loc[
+        hdb_labels.isin(selected_hdb_ids)
+    ].copy()
+
+    if my_data.empty:
+
+        st.warning(
+            f"No records were found for {selected_city}. "
+            "Check the hdb_delivery labels in your dataset."
+        )
+
+    else:
+
+        # ---------------------------------------------------------------------
+        # PREPARE NUMERIC COLUMNS
+        # ---------------------------------------------------------------------
+
+        numeric_cols = [
+            "distance_km",
+            "Time_taken (min)",
+            "Delivery_person_Ratings",
+            "operational_cluster"
+        ]
+
+        # Keep operational clusters as categorical labels for map colors
+        my_data["_operational_cluster_label"] = (
+            my_data["operational_cluster"]
+            .map(
+                lambda x: (
+                    str(int(x))
+                    if pd.notna(x) and float(x).is_integer()
+                    else "Unknown"
+                )
+            )
+        )
+
+        # ---------------------------------------------------------------------
+        # KPI CARDS
+        # ---------------------------------------------------------------------
+
+        avg_distance = my_data["distance_km"].mean()
+        avg_time = my_data["Time_taken (min)"].mean()
+        avg_rating = my_data["Delivery_person_Ratings"].mean()
+
+        st.markdown("### City Performance")
+
+        kpi1, kpi2, kpi3 = st.columns(3, gap="large")
+
+        with kpi1:
+            st.metric(
+                label="Average Delivery Distance",
+                value=(
+                    f"{avg_distance:.2f} km"
+                    if pd.notna(avg_distance)
+                    else "N/A"
+                )
+            )
+
+        with kpi2:
+            st.metric(
+                label="Average Delivery Time",
+                value=(
+                    f"{avg_time:.2f} min"
+                    if pd.notna(avg_time)
+                    else "N/A"
+                )
+            )
+
+        with kpi3:
+            st.metric(
+                label="Average Delivery Agent Rating",
+                value=(
+                    f"{avg_rating:.2f} / 5"
+                    if pd.notna(avg_rating)
+                    else "N/A"
+                )
+            )
+
+        st.caption(
+            f"{len(my_data):,} records selected for {selected_city}. "
+            f"Geographic cluster ID(s): {', '.join(map(str, selected_hdb_ids))}."
+        )
+
+        st.divider()
+
+        # ---------------------------------------------------------------------
+        # TWO GEOGRAPHIC MAPS
+        # ---------------------------------------------------------------------
+
+        st.markdown("### Geographic Distribution")
+
+        restaurant_col, delivery_col = st.columns(2, gap="large")
+
+        # Restaurant map
+        with restaurant_col:
+
+            restaurant_fig = create_city_map(
+                my_data,
+                lat_col="Restaurant_latitude",
+                lon_col="Restaurant_longitude",
+                title=f"{selected_city} — Restaurant Locations"
+            )
+
+            if restaurant_fig is not None:
+
+                st.plotly_chart(
+                    restaurant_fig,
+                    use_container_width=True,
+                    config={"displayModeBar": False},
+                    key="restaurant_locations_map"
+                )
+
+            else:
+                st.warning(
+                    "No valid restaurant coordinates are available "
+                    "for this selection."
+                )
+
+        # Delivery map
+        with delivery_col:
+
+            delivery_fig = create_city_map(
+                my_data,
+                lat_col="Delivery_location_latitude",
+                lon_col="Delivery_location_longitude",
+                title=f"{selected_city} — Delivery Locations"
+            )
+
+            if delivery_fig is not None:
+
+                st.plotly_chart(
+                    delivery_fig,
+                    use_container_width=True,
+                    config={"displayModeBar": False},
+                    key="delivery_locations_map"
+                )
+
+            else:
+                st.warning(
+                    "No valid delivery coordinates are available "
+                    "for this selection."
+                )
+
+        st.divider()
+
+        # ---------------------------------------------------------------------
+        # OPERATIONAL CLUSTER PROFILE TABLE
+        # ---------------------------------------------------------------------
+
+        st.markdown("### Operational Cluster Profiles")
+
+        st.caption(
+            "The descriptions below summarize the characteristics you "
+            "identified while profiling your operational clusters. "
+            "Record counts and city percentages are calculated for the "
+            "selected city."
+        )
+
+        operational_ids = (
+            my_data["operational_cluster"]
+            .dropna()
+            .astype(int)
+            .unique()
+        )
+
+        operational_ids = sorted(operational_ids)
+
+        profile_rows = []
+
+        for cluster_id in operational_ids:
+
+            cluster_records = int(
+                (my_data["operational_cluster"] == cluster_id).sum()
+            )
+
+            city_percentage = (
+                cluster_records / len(my_data) * 100
+            )
+
+            description = OPERATIONAL_CLUSTER_PROFILES.get(
+                cluster_id,
+                {
+                    "Traffic density": "Not profiled yet",
+                    "Vehicle condition": "Not profiled yet",
+                    "Vehicle type": "Not profiled yet"
+                }
+            )
+
+            profile_rows.append({
+                "Operational Cluster": cluster_id,
+                "Records": cluster_records,
+                "Share of City Records (%)": round(city_percentage, 2),
+                "Traffic Density": description["Traffic density"],
+                "Vehicle Condition": description["Vehicle condition"],
+                "Vehicle Type": description["Vehicle type"]
+            })
+
+        cluster_profile_df = pd.DataFrame(profile_rows)
+
+        if not cluster_profile_df.empty:
+
+            st.dataframe(
+                cluster_profile_df,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "Operational Cluster": st.column_config.NumberColumn(
+                        "Operational Cluster",
+                        format="%d"
+                    ),
+                    "Records": st.column_config.NumberColumn(
+                        "Records",
+                        format="%d"
+                    ),
+                    "Share of City Records (%)":
+                        st.column_config.NumberColumn(
+                            "Share of City Records (%)",
+                            format="%.2f%%"
+                        )
+                }
+            )
+
+        else:
+
+            st.info(
+                "No operational cluster labels were found "
+                "for this city's records."
+            )
 
 # =============================================================================
 # TAB 3 — PREDICTION
