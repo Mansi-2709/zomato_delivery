@@ -881,7 +881,7 @@ with tab_clustering:
 
     st.caption(
         "Explore delivery locations, restaurant hotspots, and operational "
-        "segments across the cities represented in your dataset."
+        "segments across the cities. "
     )
 
     # -------------------------------------------------------------------------
@@ -987,7 +987,6 @@ with tab_clustering:
 
         st.caption(
             f"{len(my_data):,} records selected for {selected_city}. "
-            f"Geographic cluster ID(s): {', '.join(map(str, selected_hdb_ids))}."
         )
 
         st.divider()
