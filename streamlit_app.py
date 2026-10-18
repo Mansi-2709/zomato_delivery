@@ -348,7 +348,7 @@ def create_city_map(data, lat_col, lon_col, title):
     )
 
     # Plotly uses discrete colors when cluster labels are strings
-    fig = px.scatter_mapbox(
+    fig = px.scatter_map(
         map_data,
         lat=lat_col,
         lon=lon_col,
@@ -366,16 +366,16 @@ def create_city_map(data, lat_col, lon_col, title):
             "distance_km": "Distance (km)",
             "Time_taken (min)": "Delivery time (min)"
         },
-        height=520
-    )
-
-    fig.update_layout(
-        mapbox_style="open-street-map",
-        mapbox_center={
+        height=520,
+        map_style="open-street-map",
+        center={
             "lat": center_lat,
             "lon": center_lon
         },
-        mapbox_zoom=zoom,
+        zoom=zoom
+    )
+
+    fig.update_layout(
         title={
             "text": title,
             "x": 0.03,
