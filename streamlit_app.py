@@ -1346,13 +1346,13 @@ with tab_prediction:
             "distance_km": float(distance_km),
             "multiple_deliveries": int(multiple_deliveries),
             "Vehicle_condition": int(vehicle_condition),
-            "Road_traffic_density": traffic_map[traffic],
+            "Traffic": traffic_map[traffic],
             "Time_Orderd_Hour": int(order_hour),
-            "Weather_conditions": weather_map[weather],
-            "Type_of_order": order_map[order_type],
-            "Type_of_vehicle": vehicle_map[vehicle_type],
-            "Festival": festival_map[festival],
-            "City": city_map[city_type],
+            "weather_num": weather_map[weather],
+            "order_num": order_map[order_type],
+            "vehicle_num": vehicle_map[vehicle_type],
+            "fest_num": festival_map[festival],
+            "city_num": city_map[city_type],
             "Day_of_Week_Num": day_map[day_of_week]
         }])
         
