@@ -1361,7 +1361,7 @@ with tab_prediction:
         y = delivery_data[['Time_taken (min)']]
         clf = xg.XGBRegressor(objective='reg:squarederror', random_state=42, learning_rate= 0.01, max_depth=8, n_estimators=700)
         clf.fit(X,y)
-        y_pred=float(clf.predict(input_data))
+        y_pred= clf.predict(input_data)
         
         st.metric( label="Estimated Delivery Time", value=f"{y_pred :.1f} minutes")
 
