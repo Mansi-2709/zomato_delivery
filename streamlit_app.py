@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+import xgboost as xg
 
 # =============================================================================
 # Zomato Delivery Intelligence — Streamlit UI only
@@ -1135,22 +1136,234 @@ with tab_clustering:
                 "for this city's records."
             )
 
-# =============================================================================
-# TAB 3 — PREDICTION
-# Keep/move your existing prediction UI code here.
-# No model training or inference is included in this UI structure.
-# =============================================================================
 
 with tab_prediction:
+    
+    st.subheader("Delivery Time Predictor")
 
-    st.subheader("Delivery Time Prediction")
     st.caption(
-        "Move your existing delivery prediction inputs and prediction-result "
-        "layout into this tab."
+        "Enter delivery conditions to estimate the time required "
+        "to complete the delivery."
     )
 
-    # Paste your existing prediction form and result UI here.
+    st.markdown(
+        """
+        <div style="
+            background: linear-gradient(110deg, #FFF0F2, #FFFFFF);
+            border: 1px solid #F0D9DC;
+            border-radius: 16px;
+            padding: 17px 20px;
+            margin: 8px 0 20px 0;
+        ">
+            <div style="color:#B71C2C; font-weight:800; font-size:12px;
+                        letter-spacing:1.2px;">
+                POWERED BY XGBOOST REGRESSION
+            </div>
+            <div style="color:#2B2225; font-size:14px; margin-top:6px;">
+                Adjust the delivery details below and estimate the
+                expected delivery time.
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
+    # ---------------------------------------------------------
+    # ENCODING MAPS — MUST MATCH THE MODEL'S TRAINING ENCODING
+    # ---------------------------------------------------------
+
+    traffic_map = {
+        "High": 0,
+        "Medium": 3,
+        "Low": 2,
+        "Jam": 1
+    }
+
+    weather_map = {
+        "Cloudy": 0,
+        "Fog": 1,
+        "Sandstorm": 2,
+        "Stormy": 3,
+        "Sunny": 4,
+        "Windy": 5
+    }
+
+    order_map = {
+        "Buffet": 0,
+        "Drinks": 1,
+        "Meal": 2,
+        "Snack": 3
+    }
+
+    vehicle_map = {
+        "Bicycle": 0,
+        "Electric scooter": 1,
+        "Motorcycle": 2,
+        "Scooter": 3
+    }
+
+    festival_map = {
+        "No": 0,
+        "Yes": 1
+    }
+
+    city_map = {
+        "Metropolitian": 0,
+        "Semi-urban": 1,
+        "Urban": 2
+    }
+
+    day_map = {
+        "Monday": 0,
+        "Tuesday": 1,
+        "Wednesday": 2,
+        "Thursday": 3,
+        "Friday": 4,
+        "Saturday": 5,
+        "Sunday": 6
+    }
+
+    # ---------------------------------------------------------
+    # INPUT FORM
+    # ---------------------------------------------------------
+
+    with st.form("delivery_prediction_form"):
+
+        st.markdown("### Delivery Details")
+
+        left, right = st.columns(2, gap="large")
+
+        with left:
+
+            delivery_agent_age = st.number_input(
+                "Delivery agent age",
+                min_value=15,
+                max_value=50,
+                value=30,
+                step=1
+            )
+
+            delivery_agent_rating = st.number_input(
+                "Delivery agent rating",
+                min_value=1.0,
+                max_value=6.0,
+                value=4.5,
+                step=0.1,
+                format="%.1f"
+            )
+
+            distance_km = st.number_input(
+                "Delivery distance (km)",
+                min_value=1.0,
+                max_value=21.0,
+                value=5.0,
+                step=0.1,
+                format="%.1f"
+            )
+
+            multiple_deliveries = st.selectbox(
+                "Number of multiple deliveries",
+                options=[0, 1, 2, 3],
+                index=1
+            )
+
+            vehicle_condition = st.selectbox(
+                "Vehicle condition",
+                options=[0, 1, 2, 3],
+                index=1
+            )
+
+            traffic = st.selectbox(
+                "Road traffic density",
+                options=list(traffic_map.keys()),
+                index=1
+            )
+
+            order_hour = st.slider(
+                "Order hour",
+                min_value=8,
+                max_value=23,
+                value=18,
+                step=1,
+                help="Enter the order hour using the 24-hour clock."
+            )
+
+        with right:
+
+            weather = st.selectbox(
+                "Weather condition",
+                options=list(weather_map.keys()),
+                index=0
+            )
+
+            order_type = st.selectbox(
+                "Type of order",
+                options=list(order_map.keys()),
+                index=2
+            )
+
+            vehicle_type = st.selectbox(
+                "Type of vehicle",
+                options=list(vehicle_map.keys()),
+                index=2
+            )
+
+            festival = st.selectbox(
+                "Festival",
+                options=list(festival_map.keys()),
+                index=0
+            )
+
+            city_type = st.selectbox(
+                "City category",
+                options=list(city_map.keys()),
+                index=0
+            )
+
+            day_of_week = st.selectbox(
+                "Day of the week",
+                options=list(day_map.keys()),
+                index=0
+            )
+
+        st.markdown("---")
+
+        predict_button = st.form_submit_button(
+            "Estimate Delivery Time",
+            use_container_width=True
+        )
+
+    # ---------------------------------------------------------
+    # PREDICTION
+    # ---------------------------------------------------------
+
+    if predict_button:
+
+        # Create one record using the same feature names as the dataset.
+        input_data = pd.DataFrame([{
+            "Delivery_person_Age": int(delivery_agent_age),
+            "Delivery_person_Ratings": float(delivery_agent_rating),
+            "distance_km": float(distance_km),
+            "multiple_deliveries": int(multiple_deliveries),
+            "Vehicle_condition": int(vehicle_condition),
+            "Road_traffic_density": traffic_map[traffic],
+            "Time_Orderd_Hour": int(order_hour),
+            "Weather_conditions": weather_map[weather],
+            "Type_of_order": order_map[order_type],
+            "Type_of_vehicle": vehicle_map[vehicle_type],
+            "Festival": festival_map[festival],
+            "City": city_map[city_type],
+            "Day_of_Week_Num": day_map[day_of_week]
+        }])
+        
+        col_X = ['Delivery_person_Age', 'Delivery_person_Ratings', 'distance_km', 'multiple_deliveries', 'Vehicle_condition', 'Traffic', 'Time_Orderd_Hour', 'weather_num', 'order_num', 'vehicle_num', 'fest_num', 'city_num', 'Day_of_Week_Num']
+        X=delivery_data[col_X]
+        y = delivery_data[['Time_taken (min)']]
+        clf = xg.XGBRegressor(objective='reg:squarederror', random_state=42, learning_rate= 0.01, max_depth=8, n_estimators=700)
+        clf.fit(X,y)
+        y_pred=float(clf.predict(input_data))
+        
+        st.metric( label="Estimated Delivery Time", value=f"{y_pred :.1f} minutes")
 
 # =============================================================================
 # FOOTER
