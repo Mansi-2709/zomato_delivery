@@ -6,11 +6,6 @@ import plotly.express as px
 import streamlit as st
 import xgboost as xg
 
-# =============================================================================
-# Zomato Delivery Intelligence — Streamlit UI only
-# No ML training, model loading, or inference is implemented here.
-# Keep your cleaned dataset beside this file as `zomato_cleaned.csv`.
-# =============================================================================
 
 st.set_page_config(
     page_title="Zomato | Delivery Intelligence",
@@ -1355,16 +1350,17 @@ with tab_prediction:
             "city_num": city_map[city_type],
             "Day_of_Week_Num": day_map[day_of_week]
         }])
-        
-        col_X = ['Delivery_person_Age', 'Delivery_person_Ratings', 'distance_km', 'multiple_deliveries', 'Vehicle_condition', 'Traffic', 'Time_Orderd_Hour', 'weather_num', 'order_num', 'vehicle_num', 'fest_num', 'city_num', 'Day_of_Week_Num']
-        X=delivery_data[col_X]
-        y = delivery_data[['Time_taken (min)']]
-        clf = xg.XGBRegressor(objective='reg:squarederror', random_state=42, learning_rate= 0.01, max_depth=8, n_estimators=700)
-        clf.fit(X,y)
 
-        prediction = clf.predict(input_data)
+        with st.spinner("Calculating your estimated delivery time..."):
+            col_X = ['Delivery_person_Age', 'Delivery_person_Ratings', 'distance_km', 'multiple_deliveries', 'Vehicle_condition', 'Traffic', 'Time_Orderd_Hour', 'weather_num', 'order_num', 'vehicle_num', 'fest_num', 'city_num', 'Day_of_Week_Num']
+            X=delivery_data[col_X]
+            y = delivery_data[['Time_taken (min)']]
+            clf = xg.XGBRegressor(objective='reg:squarederror', random_state=42, learning_rate= 0.01, max_depth=8, n_estimators=700)
+            clf.fit(X,y)
+            prediction = clf.predict(input_data)
+            y_pred = float(np.asarray(prediction).reshape(-1)[0])
         
-        y_pred = float(np.asarray(prediction).reshape(-1)[0])
+        
         st.metric(
             label="Estimated Delivery Time",
             value=f"{y_pred:.1f} minutes"
