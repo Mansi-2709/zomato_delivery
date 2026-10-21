@@ -45,16 +45,16 @@ The repository contains the following project assets. Update the filenames below
 ```text
 zomato_delivery/
 │
-├── app.py
+├── streamlit_app.py
 │   └── Streamlit application for delivery analytics and prediction
 │
 ├── Zomato2.csv
+│   └── Cleaned dataset with processed features and cluster labels 
+│
+├── Zomato Dataset.csv
 │   └── Original raw dataset before cleaning
 │
-├── cleaned_delivery_data.csv
-│   └── Cleaned dataset with processed features and cluster labels
-│
-├── zomato_delivery_analysis.ipynb
+├── zomato.ipynb
 │   └── End-to-end data preparation, clustering, model comparison,
 │       hyperparameter tuning, and evaluation
 │
@@ -68,7 +68,7 @@ zomato_delivery/
     └── Project documentation
 ```
 
-> **Note:** If `app.py` loads a previously trained model from a `.joblib` file, include that model file in the repository or provide another reliable way to access it. A saved model avoids retraining on every prediction request.
+> **Note:** If `streamlit_app.py` loads a previously trained model from a `.joblib` file, include that model file in the repository or provide another reliable way to access it. A saved model avoids retraining on every prediction request.
 
 ## 📊 Dataset Description
 
