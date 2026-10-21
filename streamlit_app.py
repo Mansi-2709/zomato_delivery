@@ -849,7 +849,7 @@ with tab_eda:
                         font-size:13px;
                         line-height:1.7;
                         margin-top:15px;
-                    ">Use this comparison to investigate which days record the highest order volume. The busiest day is based on record counts, not delivery speed.</div>
+                    ">The busiest day is based on record counts, not delivery speed.</div>
                 </div>
                 """
             )
