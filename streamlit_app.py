@@ -1,11 +1,17 @@
 from pathlib import Path
-
+import joblib
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import streamlit as st
 import xgboost as xg
 
+@st.cache_resource
+def load_model():
+    model_path = Path(__file__).parent / "xgb_delivery_time_model.joblib"
+    return joblib.load(model_path)
+
+clf = load_model()
 
 st.set_page_config(
     page_title="Zomato | Delivery Intelligence",
@@ -1352,11 +1358,6 @@ with tab_prediction:
         }])
 
         with st.spinner("Calculating your estimated delivery time..."):
-            col_X = ['Delivery_person_Age', 'Delivery_person_Ratings', 'distance_km', 'multiple_deliveries', 'Vehicle_condition', 'Traffic', 'Time_Orderd_Hour', 'weather_num', 'order_num', 'vehicle_num', 'fest_num', 'city_num', 'Day_of_Week_Num']
-            X=delivery_data[col_X]
-            y = delivery_data[['Time_taken (min)']]
-            clf = xg.XGBRegressor(objective='reg:squarederror', random_state=42, learning_rate= 0.01, max_depth=8, n_estimators=700)
-            clf.fit(X,y)
             prediction = clf.predict(input_data)
             y_pred = float(np.asarray(prediction).reshape(-1)[0])
         
