@@ -320,12 +320,12 @@ pip install streamlit pandas numpy plotly scikit-learn xgboost hdbscan joblib
 
 Ensure that the application can access the cleaned dataset and any required model artifact using valid paths.
 
-If the application loads a saved XGBoost model, ensure that the model file is present at the path expected by `app.py`.
+If the application loads a saved XGBoost model, ensure that the model file is present at the path expected by `streamlit_app.py`.
 
 ### Step 4: Launch the application
 
 ```bash
-streamlit run app.py
+streamlit run streamlit_app.py
 ```
 
 Streamlit will provide a local URL in the terminal. Open that URL in your browser to interact with the application.
